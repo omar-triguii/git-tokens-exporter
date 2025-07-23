@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gitlab-token-exporter
+  namespace: gitlab-exporter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gitlab-token-exporter
+  template:
+    metadata:
+      labels:
+        app: gitlab-token-exporter
+    spec:
+      imagePullSecrets:
+      - name: docker-image-pull-secret ## if your image is pushed in private docker registry
+      - name: exporter
+        image: ## put here your docker registry
+        ports:
+        - containerPort: 8000
+        env:
+        - name: GITLAB_API_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: gitlab-token-secret ## needs to be created using external secret
+              key: token
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gitlab-token-exporter
+  namespace: gitlab-exporter
+  labels:
+    app: gitlab-token-exporter
+spec:
+  selector:
+    app: gitlab-token-exporter
+  ports:
+  - port: 8000
+    name: metrics
